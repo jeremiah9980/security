@@ -1,0 +1,21 @@
+[Unit]
+Description=PropertyPresence local presence agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust User/paths to your install. Running as a non-root user is fine when
+# using the `ip neigh` LAN fallback; the active scapy sweep needs CAP_NET_RAW.
+User=pi
+WorkingDirectory=/opt/propertypresence
+EnvironmentFile=/opt/propertypresence/.env
+ExecStart=/opt/propertypresence/.venv/bin/python -m propertypresence.main \
+          --config /opt/propertypresence/config/config.yaml --run
+Restart=on-failure
+RestartSec=10
+# Uncomment to allow the privilege-free active scan without full root:
+# AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+
+[Install]
+WantedBy=multi-user.target

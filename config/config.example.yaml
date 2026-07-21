@@ -1,0 +1,77 @@
+# PropertyPresence — example configuration.
+# Copy to config/config.yaml (gitignored) and edit. Secrets never go here —
+# they come from environment variables / .env (see .env.example).
+
+property_name: "My Apartment"
+
+# How often the agent runs a full poll.
+poll_interval_seconds: 60
+
+# A roster device must miss this many consecutive polls before LEFT/OFFLINE
+# fires. 2 suppresses false departures from a single dropped scan.
+offline_confirmation_polls: 2
+
+database: "./data/presence.db"
+
+collectors:
+  wifi:
+    enabled: true
+    # "auto" derives the local /24 from the host's primary interface, or set
+    # e.g. "192.168.4.0/24". Only your own LAN is ever scanned.
+    subnet: "auto"
+  bluetooth:
+    enabled: false          # opt-in; see docs/PRIVACY.md before enabling
+    scan_seconds: 8
+  eero:
+    enabled: false
+    network_name: ""        # match one network on your account (blank = all)
+    session_file: "./data/eero_session.cookie"
+
+sinks:
+  log:
+    enabled: true
+  slack:
+    enabled: true
+    notify_on_new_device: true   # warn when an unknown device appears
+    # Preferred: set SLACK_WEBHOOK_URL in the environment. You may also list
+    # webhook URLs here, but do not commit real ones.
+    webhook_urls: []
+  github:
+    enabled: false
+    repo: "jeremiah9980/security"      # PRIVATE repo strongly recommended
+    branch: "main"
+    status_path: "status/presence.json"
+    history_path: "status/history.jsonl"
+    redact_macs: true                  # SHA-256-hash MACs before committing
+
+integrations:
+  ring:
+    enabled: false
+    snapshot_dir: "./data/snapshots"
+    snapshot_on: ["NEW_DEVICE", "ARRIVED"]
+  alexa:
+    enabled: false
+    mode: "notify_me"        # "notify_me" or "webhook"
+    announce_on: ["ARRIVED", "LEFT", "NEW_DEVICE"]
+  cameras:
+    enabled: false
+    feeds:
+      - name: "Front Door"
+        zone: "entry"
+        kind: "ring"         # rtsp | ring | kinesis
+        url: ""
+
+# Roster of YOUR OWN known devices. Entries with `person:` emit ARRIVED/LEFT
+# and count toward "people home"; entries without emit ONLINE/OFFLINE.
+# Match on MAC (most reliable) and/or name substrings.
+roster:
+  - name: "Jeremiah iPhone"
+    person: "Jeremiah"
+    match:
+      macs: ["aa:bb:cc:dd:ee:ff"]
+      names: ["jeremiah", "jere iphone"]
+    notify: true
+  - name: "Living Room TV"
+    match:
+      names: ["samsung", "roku"]
+    notify: false
