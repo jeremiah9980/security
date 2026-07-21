@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropertyPresence · Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface-2: #1c2129; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #2ea043; --green-dim: #12261a; --red: #da3633; --red-dim: #2d1516;
+    --yellow: #d29922; --yellow-dim: #2b2111; --blue: #388bfd; --blue-dim: #131f33;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  body {
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  a { color: var(--accent); text-decoration: none; }
+
+  header {
+    position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; height: 56px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: .02em; white-space: nowrap; }
+  header h1 .prop { color: var(--muted); font-weight: 500; }
+  nav { display: flex; gap: 2px; margin-left: 6px; }
+  nav a {
+    padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 550; color: var(--muted);
+  }
+  nav a:hover { color: var(--text); background: var(--surface-2); }
+  nav a.on { color: var(--text); background: var(--surface-2); box-shadow: inset 0 -2px 0 var(--accent); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .updated { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px;
+    border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+  .pill-home    { background: var(--green-dim);  color: var(--green); }
+  .pill-online  { background: var(--blue-dim);   color: var(--accent); }
+  .pill-warn    { background: var(--yellow-dim); color: var(--yellow); }
+  .pill-bad     { background: var(--red-dim);    color: var(--red); }
+  .pill-ok      { background: var(--green-dim);  color: var(--green); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 22px 20px 60px; }
+  .section-title {
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--muted); margin: 26px 0 10px;
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* People */
+  .people { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+  .person {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    border-left: 3px solid var(--border);
+  }
+  .person.home { border-left-color: var(--green); }
+  .person.away { opacity: .75; border-left-color: var(--red); }
+  .avatar {
+    flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 700; font-size: 15px; background: var(--surface-2); color: var(--muted);
+  }
+  .person.home .avatar { background: var(--green-dim); color: var(--green); }
+  .person .who { min-width: 0; }
+  .person .name { font-weight: 600; }
+  .person .meta { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .person .state { margin-left: auto; font-size: 11.5px; font-weight: 700; }
+  .person.home .state { color: var(--green); }
+  .person.away .state { color: var(--muted); }
+
+  /* Grid: devices + events */
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 14px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 13px;
+  }
+  .card-head .n { color: var(--muted); font-weight: 500; font-size: 12px; }
+
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; }
+  th {
+    text-align: left; padding: 8px 14px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--muted); border-bottom: 1px solid var(--border);
+    background: var(--surface-2); white-space: nowrap; font-weight: 600;
+  }
+  td { padding: 8px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: var(--mono); font-size: 12px; }
+  .num { font-variant-numeric: tabular-nums; }
+  .dev-name { font-weight: 550; }
+  .dev-sub { font-size: 11.5px; color: var(--muted); }
+  .tag {
+    display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+  }
+  .tag.person-tag { background: var(--green-dim); color: var(--green); }
+  .tag.known { background: var(--surface-2); color: var(--muted); }
+  .tag.unknown { background: var(--yellow-dim); color: var(--yellow); }
+  .rssi { display: inline-flex; align-items: center; gap: 6px; }
+  .rssi .bar { width: 44px; height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+  .rssi .bar i { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+
+  /* Events feed */
+  .feed { max-height: 520px; overflow-y: auto; }
+  .ev { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .ev:last-child { border-bottom: none; }
+  .ev .ico {
+    flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+    font-size: 12px; font-weight: 800; background: var(--surface-2); color: var(--muted);
+  }
+  .ev.ARRIVED .ico { background: var(--green-dim); color: var(--green); }
+  .ev.LEFT .ico { background: var(--red-dim); color: var(--red); }
+  .ev.ONLINE .ico { background: var(--blue-dim); color: var(--accent); }
+  .ev.NEW_DEVICE .ico { background: var(--yellow-dim); color: var(--yellow); }
+  .ev .t { font-size: 13px; }
+  .ev .m { font-size: 11.5px; color: var(--muted); }
+  .empty { padding: 34px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  footer {
+    margin-top: 26px; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center;
+    color: var(--muted); font-size: 12px;
+  }
+  footer .mono { font-size: 11.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PropertyPresence <span class="prop" id="propName"></span></h1>
+  <nav>
+    <a class="on" href="/">Dashboard</a>
+    <a href="/integrations">Integrations</a>
+  </nav>
+  <div class="header-right">
+    <span class="pill pill-home"><span class="dot"></span><span id="pHome">–</span> home</span>
+    <span class="pill pill-online"><span class="dot"></span><span id="pOnline">–</span> online</span>
+    <span class="pill" id="pHealth" hidden></span>
+    <span class="updated" id="updated">loading…</span>
+  </div>
+</header>
+
+<main>
+  <div class="section-title">People</div>
+  <div class="people" id="people"><div class="empty">Loading…</div></div>
+
+  <div class="cols" style="margin-top:26px;">
+    <div>
+      <div class="section-title">Devices online</div>
+      <div class="card">
+        <div class="card-head"><span>Now on the network</span><span class="n" id="devCount"></span></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Device</th><th>Type</th><th>IP</th><th>MAC</th><th>Signal</th><th>Seen</th></tr></thead>
+            <tbody id="devBody"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-title">Recent events</div>
+      <div class="card">
+        <div class="card-head"><span>Activity</span><a href="/api/events" class="n">json</a></div>
+        <div class="feed" id="feed"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer id="foot"></footer>
+</main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+
+const EV_ICON = { ARRIVED:"→", LEFT:"←", ONLINE:"•", OFFLINE:"○", NEW_DEVICE:"!" };
+
+function rssiPct(rssi){
+  if (rssi == null) return null;
+  return Math.max(0, Math.min(100, Math.round((rssi + 90) * (100/60))));
+}
+
+async function j(url){ const r = await fetch(url); if(!r.ok) throw new Error(url+" "+r.status); return r.json(); }
+
+async function refresh(){
+  try {
+    const [p, ev, h] = await Promise.all([j("/api/presence"), j("/api/events?limit=40"), j("/api/health")]);
+
+    $("propName").textContent = "· " + p.property;
+    document.title = "PropertyPresence · " + p.property;
+    $("pHome").textContent = p.people_home;
+    $("pOnline").textContent = p.online_count;
+    $("updated").textContent = new Date(p.generated_at * 1000).toLocaleTimeString();
+
+    const hp = $("pHealth");
+    hp.hidden = false;
+    hp.className = "pill " + (h.status === "healthy" ? "pill-ok" : "pill-bad");
+    hp.innerHTML = '<span class="dot"></span>' + esc(h.status);
+
+    // people
+    const people = $("people");
+    if (!p.persons.length) {
+      people.innerHTML = '<div class="empty" style="grid-column:1/-1">No people in the roster yet — add <span class="mono">person:</span> entries to config.yaml.</div>';
+    } else {
+      people.innerHTML = p.persons.map(x => `
+        <div class="person ${x.home ? "home" : "away"}">
+          <div class="avatar">${esc((x.name||"?")[0].toUpperCase())}</div>
+          <div class="who">
+            <div class="name">${esc(x.name)}</div>
+            <div class="meta">${x.home ? "since " + esc(x.since_human || "–") : "last seen " + esc(x.last_seen_human)}</div>
+          </div>
+          <div class="state">${x.home ? "HOME" : "AWAY"}</div>
+        </div>`).join("");
+    }
+
+    // devices
+    const devs = p.devices_online;
+    $("devCount").textContent = devs.length + " device" + (devs.length === 1 ? "" : "s");
+    $("devBody").innerHTML = devs.length ? devs.map(d => {
+      const pct = rssiPct(d.rssi);
+      const tag = d.person ? `<span class="tag person-tag">${esc(d.person)}</span>`
+                : d.known ? '<span class="tag known">known</span>'
+                : '<span class="tag unknown">unknown</span>';
+      return `<tr>
+        <td><div class="dev-name">${esc(d.label)}</div>${d.gateway ? `<div class="dev-sub">${esc(d.gateway)}</div>` : ""}</td>
+        <td>${tag}</td>
+        <td class="mono num">${esc(d.ip || "–")}</td>
+        <td class="mono">${esc(d.mac)}</td>
+        <td>${pct == null ? '<span class="dev-sub">–</span>' :
+            `<span class="rssi"><span class="bar"><i style="width:${pct}%"></i></span><span class="dev-sub num">${d.rssi} dBm</span></span>`}</td>
+        <td class="dev-sub">${esc(d.last_seen_human)}</td>
+      </tr>`;
+    }).join("") : '<tr><td colspan="6" class="empty">Nothing online — waiting for the first poll.</td></tr>';
+
+    // events
+    $("feed").innerHTML = ev.events.length ? ev.events.map(e => `
+      <div class="ev ${esc(e.type)}">
+        <div class="ico">${EV_ICON[e.type] || "•"}</div>
+        <div>
+          <div class="t">${esc(e.title)}</div>
+          <div class="m">${esc(e.ago)}${e.source ? " · via " + esc(e.source) : ""}</div>
+        </div>
+      </div>`).join("") : '<div class="empty">No events yet.</div>';
+
+    $("foot").innerHTML =
+      `<span>Health: <b style="color:${h.status === "healthy" ? "var(--green)" : "var(--red)"}">${esc(h.status)}</b></span>` +
+      `<span>Last poll: ${esc(h.last_poll_human)}</span>` +
+      `<span>Interval: ${h.poll_interval_seconds}s</span>` +
+      (p.unknown_online ? `<span style="color:var(--yellow)">⚠ ${p.unknown_online} unknown device(s) online</span>` : "") +
+      `<span class="mono"><a href="/api/presence">/api/presence</a></span>`;
+  } catch (e) {
+    $("updated").textContent = "connection lost — retrying…";
+  }
+}
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

@@ -64,6 +64,23 @@ python -m propertypresence.main --config config/config.yaml --run
 
 `scripts/run.sh` does the venv/deps/config bootstrap for you.
 
+## Dashboard
+
+`--run` also serves a built-in dashboard (stdlib HTTP — no extra dependencies)
+at **http://localhost:8093**:
+
+- **`/`** — main presence view: people home/away cards, devices online with
+  signal + source, live event feed, agent health. Auto-refreshes every 5s.
+- **`/integrations`** — every integration point (collectors, sinks, Ring /
+  Alexa / cameras) with live status computed from config, credentials, and
+  installed dependencies — including the exact config key or command that
+  fixes anything marked *needs setup*.
+- **JSON API** — `/api/presence`, `/api/devices`, `/api/events`, `/api/polls`,
+  `/api/integrations`, `/api/health`.
+
+Configure under `web:` in `config.yaml` (`enabled`, `host`, `port`). Bind to
+`127.0.0.1` if the dashboard shouldn't be reachable from the rest of the LAN.
+
 ### Find your devices' MACs
 
 Run `--once` with the wifi collector on and `LOG_LEVEL=DEBUG`, or check your

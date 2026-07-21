@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropertyPresence · Integrations</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface-2: #1c2129; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #2ea043; --green-dim: #12261a; --red: #da3633; --red-dim: #2d1516;
+    --yellow: #d29922; --yellow-dim: #2b2111; --blue-dim: #131f33;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  body {
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  a { color: var(--accent); text-decoration: none; }
+
+  header {
+    position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; height: 56px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: .02em; }
+  nav { display: flex; gap: 2px; margin-left: 6px; }
+  nav a { padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 550; color: var(--muted); }
+  nav a:hover { color: var(--text); background: var(--surface-2); }
+  nav a.on { color: var(--text); background: var(--surface-2); box-shadow: inset 0 -2px 0 var(--accent); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px;
+    border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .pill-ok   { background: var(--green-dim);  color: var(--green); }
+  .pill-warn { background: var(--yellow-dim); color: var(--yellow); }
+  .pill-off  { background: var(--surface-2);  color: var(--muted); }
+  .updated { color: var(--muted); font-size: 12px; }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 22px 20px 60px; }
+  .intro { color: var(--muted); font-size: 13.5px; max-width: 74ch; margin-bottom: 6px; }
+  .lastpoll { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+  .lastpoll .mono { font-family: var(--mono); color: var(--text); font-size: 12px; }
+
+  .section-title {
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--muted); margin: 26px 0 10px; display: flex; align-items: baseline; gap: 10px;
+  }
+  .section-title .desc { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .point {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px 13px; border-left: 3px solid var(--border);
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  .point.active { border-left-color: var(--green); }
+  .point.needs_setup { border-left-color: var(--yellow); }
+  .point.off { opacity: .62; }
+  .point-head { display: flex; align-items: center; gap: 10px; }
+  .point-head .name { font-weight: 600; font-size: 14px; }
+  .state {
+    margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    padding: 2px 9px; border-radius: 10px;
+  }
+  .state.active { background: var(--green-dim); color: var(--green); }
+  .state.needs_setup { background: var(--yellow-dim); color: var(--yellow); }
+  .state.off { background: var(--surface-2); color: var(--muted); }
+  .detail { color: var(--muted); font-size: 12.5px; }
+  .hint {
+    font-family: var(--mono); font-size: 11.5px; color: var(--yellow);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 9px; overflow-x: auto; white-space: nowrap;
+  }
+  .ran { font-size: 11px; color: var(--green); font-weight: 600; }
+  .empty { padding: 34px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  footer { margin-top: 30px; color: var(--muted); font-size: 12px; }
+  footer .mono { font-family: var(--mono); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PropertyPresence</h1>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a class="on" href="/integrations">Integrations</a>
+  </nav>
+  <div class="header-right">
+    <span class="pill pill-ok"><span class="dot"></span><span id="cActive">–</span> active</span>
+    <span class="pill pill-warn"><span class="dot"></span><span id="cSetup">–</span> need setup</span>
+    <span class="pill pill-off"><span class="dot"></span><span id="cOff">–</span> off</span>
+    <span class="updated" id="updated">loading…</span>
+  </div>
+</header>
+
+<main>
+  <p class="intro">Every point where the agent touches the outside world — the signals it reads
+  (collectors), where it publishes (sinks), and the optional add-ons (integrations). Status is
+  computed live from config, credentials, and installed dependencies, so this reflects what the
+  next poll will actually do.</p>
+  <p class="lastpoll" id="lastpoll"></p>
+
+  <div class="section-title">Collectors <span class="desc">— presence signals merged each poll</span></div>
+  <div class="grid" id="g-collectors"><div class="empty">Loading…</div></div>
+
+  <div class="section-title">Sinks <span class="desc">— where events &amp; snapshots are published</span></div>
+  <div class="grid" id="g-sinks"><div class="empty">Loading…</div></div>
+
+  <div class="section-title">Integrations <span class="desc">— Ring · Alexa · camera feeds (NextGenSecurity seam)</span></div>
+  <div class="grid" id="g-integrations"><div class="empty">Loading…</div></div>
+
+  <footer>
+    Enable or configure points in <span class="mono">config/config.yaml</span> and
+    <span class="mono">.env</span>, then restart the agent. Raw status:
+    <a class="mono" href="/api/integrations">/api/integrations</a>
+  </footer>
+</main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+const LABEL = { active: "ACTIVE", needs_setup: "NEEDS SETUP", off: "OFF" };
+
+async function refresh(){
+  try {
+    const r = await fetch("/api/integrations");
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+
+    $("cActive").textContent = data.summary.active;
+    $("cSetup").textContent = data.summary.needs_setup;
+    $("cOff").textContent = data.summary.off;
+    $("updated").textContent = new Date().toLocaleTimeString();
+
+    const ran = new Set(data.last_poll_collectors || []);
+    $("lastpoll").innerHTML = data.last_poll_ts
+      ? `Last poll ran: <span class="mono">${esc([...ran].join(", ") || "none")}</span> · ${esc(new Date(data.last_poll_ts * 1000).toLocaleString())}`
+      : "No polls recorded yet — start the agent with <span class=\"mono\">--run</span>.";
+
+    for (const group of ["collectors", "sinks", "integrations"]) {
+      const points = data.points.filter(p => p.group === group);
+      $("g-" + group).innerHTML = points.map(p => `
+        <div class="point ${esc(p.state)}">
+          <div class="point-head">
+            <span class="name">${esc(p.name)}</span>
+            ${group === "collectors" && ran.has(p.key) ? '<span class="ran">✓ ran last poll</span>' : ""}
+            <span class="state ${esc(p.state)}">${LABEL[p.state] || esc(p.state)}</span>
+          </div>
+          <div class="detail">${esc(p.detail)}</div>
+          ${p.hint && p.state !== "active" ? `<div class="hint">${esc(p.hint)}</div>` : ""}
+        </div>`).join("") || '<div class="empty">None</div>';
+    }
+  } catch (e) {
+    $("updated").textContent = "connection lost — retrying…";
+  }
+}
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

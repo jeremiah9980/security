@@ -102,12 +102,17 @@ def main(argv=None):
         return _test_slack(cfg)
 
     agent = Agent(cfg)
+    server = None
     try:
         if args.once:
             print(json.dumps(agent.poll_once(), indent=2, default=str))
         else:
+            from .web import start_web
+            server = start_web(cfg)
             agent.run()
     finally:
+        if server:
+            server.shutdown()
         agent.close()
 
 
