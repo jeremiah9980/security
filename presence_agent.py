@@ -58,14 +58,20 @@ class PresenceScanner:
                 continue
             if line.startswith("?") and "(" in line and ")" in line and " at " in line:
                 ip = line.split("(", 1)[1].split(")", 1)[0]
-                mac = line.split(" at ", 1)[1].split()[0].lower()
+                mac_tokens = line.split(" at ", 1)[1].split()
+                if not mac_tokens:
+                    continue
+                mac = mac_tokens[0].lower()
                 state = line.split()[-1]
             else:
                 parts = line.split()
                 if len(parts) < 5 or "lladdr" not in parts:
                     continue
+                lladdr_index = parts.index("lladdr")
+                if lladdr_index + 1 >= len(parts):
+                    continue
                 ip = parts[0]
-                mac = parts[parts.index("lladdr") + 1].lower()
+                mac = parts[lladdr_index + 1].lower()
                 state = parts[-1]
             devices.append({"ip": ip, "mac": mac, "state": state})
         return devices
