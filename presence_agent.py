@@ -12,10 +12,16 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Callable, TypedDict
 
 
 CommandRunner = Callable[[list[str]], str]
+
+
+class SystemPresence(TypedDict):
+    hostname: str
+    logged_in_users: list[str]
+    active_interfaces: list[str]
 
 
 @dataclass(frozen=True)
@@ -52,16 +58,16 @@ class PresenceScanner:
                 continue
             if line.startswith("?") and "(" in line and ")" in line and " at " in line:
                 ip = line.split("(", 1)[1].split(")", 1)[0]
-                mac = line.split(" at ", 1)[1].split()[0]
+                mac = line.split(" at ", 1)[1].split()[0].lower()
                 state = line.split()[-1]
             else:
                 parts = line.split()
                 if len(parts) < 5 or "lladdr" not in parts:
                     continue
                 ip = parts[0]
-                mac = parts[parts.index("lladdr") + 1]
+                mac = parts[parts.index("lladdr") + 1].lower()
                 state = parts[-1]
-            devices.append({"ip": ip, "mac": mac.lower(), "state": state})
+            devices.append({"ip": ip, "mac": mac, "state": state})
         return devices
 
     def scan_bluetooth_devices(self) -> list[dict[str, str]]:
@@ -86,7 +92,7 @@ class PresenceScanner:
             devices.append({"mac": mac, "name": name})
         return devices
 
-    def scan_system_presence(self) -> dict[str, object]:
+    def scan_system_presence(self) -> SystemPresence:
         users_output = self._read_first_available([["who"]])
         users = sorted({line.split()[0] for line in users_output.splitlines() if line.split()})
 
