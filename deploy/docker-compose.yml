@@ -1,0 +1,17 @@
+services:
+  propertypresence:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    # Host networking is required so the agent can ARP-scan the LAN it sits on.
+    network_mode: host
+    env_file:
+      - ../.env
+    volumes:
+      - ../config/config.yaml:/app/config/config.yaml:ro
+      - ../data:/app/data
+    # Only needed if you enable the active scapy ARP sweep (raw sockets).
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    restart: unless-stopped
