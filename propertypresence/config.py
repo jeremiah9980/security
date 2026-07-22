@@ -25,6 +25,7 @@ DEFAULTS: dict[str, Any] = {
     # Two misses suppresses false departures from a single dropped scan.
     "offline_confirmation_polls": 2,
     "database": "./data/presence.db",
+    "web": {"enabled": True, "host": "0.0.0.0", "port": 8093},
     "collectors": {
         "wifi": {"enabled": True, "subnet": "auto"},
         "bluetooth": {"enabled": False, "scan_seconds": 8},

@@ -13,6 +13,14 @@ offline_confirmation_polls: 2
 
 database: "./data/presence.db"
 
+# Built-in dashboard (stdlib HTTP, no extra deps). Main page at "/",
+# integration-points status at "/integrations". Bind to 127.0.0.1 if you
+# don't want it reachable from the rest of the LAN.
+web:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8093
+
 collectors:
   wifi:
     enabled: true
