@@ -1,0 +1,8 @@
+# Core (required)
+PyYAML>=6.0
+requests>=2.31
+python-dotenv>=1.0
+
+# Optional collectors / integrations — install as needed:
+#   scapy>=2.5           active ARP LAN sweep (else falls back to `ip neigh`)
+#   ring_doorbell>=0.8   Ring camera events + snapshots
